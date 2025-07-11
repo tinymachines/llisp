@@ -41,7 +41,7 @@ The label loading follows a similar pattern but with a simpler structure. For SB
 
 For MNIST classification, a simple feedforward network with one hidden layer provides an excellent learning platform. The architecture consists of 784 input neurons (28×28 pixels), 128 hidden neurons, and 10 output neurons (digits 0-9).
 
-**Matrix operations form the foundation**. Since we're avoiding libraries, implement basic operations directly:
+**Matrix operations form the foundation**. Since we're avoiding libraries, implement basic operations directly. Note that for SBCL compatibility, we need to ensure all float operations return single-float types:
 
 ```lisp
 (defun matrix-multiply (matrix vector)
@@ -255,6 +255,22 @@ Once trained, the network performs inference through a simple forward pass:
 ## Learning resources and next steps
 
 Common Lisp's interactive development environment makes it ideal for learning machine learning concepts. The REPL allows immediate experimentation with network components, making debugging intuitive. Key educational advantages include the ability to inspect intermediate values during training, modify running code, and experiment with different architectures interactively.
+
+## Implementation Notes
+
+When implementing the random normal distribution for weight initialization, ensure type compatibility with SBCL:
+
+```lisp
+(defun random-normal (mean stddev)
+  "Generate random number from normal distribution"
+  (declare (type single-float mean stddev))
+  (let ((u1 (random 1.0))
+        (u2 (random 1.0)))
+    (declare (type single-float u1 u2))
+    (coerce (+ mean (* stddev (sqrt (* -2.0 (log u1))) (cos (* 2.0 pi u2)))) 'single-float)))
+```
+
+The `coerce` function ensures the result is single-float, preventing type mismatch errors during compilation.
 
 For further learning, explore weight initialization strategies like Xavier initialization, implement momentum in gradient descent, or add dropout regularization. The **simple-neural-network** library provides a clean reference implementation, while **MGL** demonstrates production-quality approaches. The symbolic nature of Lisp also enables interesting experiments like the pure-lambda neural networks demonstrated in Woodrush's blog, showing how neural computation emerges from basic list operations.
 

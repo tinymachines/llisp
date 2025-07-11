@@ -1,0 +1,15 @@
+# MNIST data files
+data/*.idx*-ubyte
+data/*.gz
+
+# Compiled files
+*.fasl
+*.x86f
+*~
+.#*
+
+# System-specific files
+.DS_Store
+
+# Trained models (too large for git)
+trained-mnist-net.lisp
