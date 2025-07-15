@@ -159,72 +159,220 @@ In the SBCL REPL:
 (asdf:load-system :mnist-ocr)
 ```
 
-## 🏃‍♂️ Quick Start
+## 🏃‍♂️ Quick Start for First-Time LISP Users
 
-### 1. Start SBCL and Load System
+### Step 1: Start SBCL REPL
+Open your terminal and type:
 ```bash
-sbcl --load mnist-ocr.asd
+sbcl
 ```
 
-### 2. In the REPL, Train Your First Network
-```lisp
-;; Load the system
-(asdf:load-system :mnist-ocr)
-
-;; Switch to our package
-(in-package :mnist-ocr)
-
-;; Load MNIST data
-(multiple-value-bind (train-images train-labels test-images test-labels)
-    (load-mnist-data "data/")
-  
-  ;; Create a simple network: 784 inputs -> 128 hidden -> 10 outputs
-  (let ((network (create-network 784 128 10)))
-    
-    ;; Train for 10 epochs
-    (format t "Starting training...~%")
-    (train-network network train-images train-labels 10 0.1)
-    
-    ;; Test the network
-    (format t "Evaluating on test set...~%")
-    (evaluate-accuracy network test-images test-labels)
-    
-    ;; Save the trained network
-    (save-network network "trained-mnist-net.lisp")))
+You should see something like:
 ```
-
-### 3. Expected Output
-```
-Starting training...
-Epoch 0: Loss = 0.2189, Accuracy = 93.25%
-Epoch 1: Loss = 0.1432, Accuracy = 95.48%
-Epoch 2: Loss = 0.1045, Accuracy = 96.73%
+This is SBCL 2.1.11, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
 ...
-Epoch 9: Loss = 0.0234, Accuracy = 99.12%
-
-Evaluating on test set...
-Test Accuracy: 97.65%
-Network saved to trained-mnist-net.lisp
+* 
 ```
 
-## 🎯 Usage Examples
+The `*` is the REPL prompt where you type commands.
 
-### Predict Single Digits
+### Step 2: Load the Project Files
+
+Copy and paste these commands ONE AT A TIME into the REPL:
+
 ```lisp
-;; Load a trained network
-(defparameter *my-network* (load-network "trained-mnist-net.lisp"))
+;; Load individual source files (since ASDF might not be configured)
+(load "packages.lisp")
+```
+Press Enter. You should see `T` (meaning success).
 
-;; Predict a single image (returns digit 0-9)
-(let ((first-test-image (aref test-images 0)))
-  (format t "Predicted digit: ~A~%" 
-          (predict-digit *my-network* first-test-image)))
+```lisp
+(load "src/data-loader.lisp")
+```
+Press Enter. You should see `T`.
 
-;; Batch predictions
-(dotimes (i 10)
-  (format t "Image ~A: Predicted ~A, Actual ~A~%" 
-          i 
-          (predict-digit *my-network* (aref test-images i))
-          (aref test-labels i)))
+```lisp
+(load "src/neural-net.lisp")
+```
+Press Enter. You should see `T`.
+
+```lisp
+(load "src/training.lisp")
+```
+Press Enter. You should see `T`.
+
+```lisp
+(load "src/inference.lisp")
+```
+Press Enter. You should see `T`.
+
+### Step 3: Load the MNIST Data
+
+Copy and paste this command:
+```lisp
+;; Load the MNIST dataset from the data/ directory
+(multiple-value-bind (train-images train-labels test-images test-labels)
+    (mnist-ocr::load-mnist-data "data/")
+  ;; Store them in global variables for easy access
+  (defparameter *train-images* train-images)
+  (defparameter *train-labels* train-labels)  
+  (defparameter *test-images* test-images)
+  (defparameter *test-labels* test-labels)
+  (format t "Loaded ~D training and ~D test images~%" 
+          (length train-images) (length test-images)))
+```
+
+You should see:
+```
+Loading MNIST data from data/
+Loaded 60000 training and 10000 test images
+```
+
+### Step 4: Create a Neural Network
+
+Copy and paste:
+```lisp
+;; Create a neural network with:
+;; - 784 inputs (28x28 pixels)
+;; - 128 hidden neurons
+;; - 10 outputs (digits 0-9)
+(defparameter *network* (mnist-ocr::create-network 784 128 10))
+(format t "Network created!~%")
+```
+
+### Step 5: Test Inference (Before Training)
+
+Let's test the network on a few images to see random predictions:
+```lisp
+;; Test on first 5 images (network is untrained, so predictions are random)
+(dotimes (i 5)
+  (let* ((image (aref *test-images* i))
+         (actual-label (aref *test-labels* i))
+         (predicted (mnist-ocr::predict-digit *network* image)))
+    (format t "Image ~D: Actual=~D, Predicted=~D~%" 
+            i actual-label predicted)))
+```
+
+You'll see random predictions since the network isn't trained yet.
+
+### Step 6: Train the Network (Quick Version)
+
+For a quick test with just 1000 images and 3 epochs:
+```lisp
+;; Quick training (takes ~30 seconds)
+(mnist-ocr::train-network *network* 
+                          (subseq *train-images* 0 1000)  ; First 1000 images
+                          (subseq *train-labels* 0 1000)  ; First 1000 labels
+                          3                               ; 3 epochs
+                          0.1)                            ; Learning rate
+```
+
+You'll see output like:
+```
+Epoch 0/3...
+Batch 100/1000
+...
+Epoch 0: Loss = 0.8234, Training Accuracy = 72.50%
+```
+
+### Step 7: Test the Trained Network
+
+```lisp
+;; Test on the same 5 images again
+(dotimes (i 5)
+  (let* ((image (aref *test-images* i))
+         (actual-label (aref *test-labels* i))
+         (predicted (mnist-ocr::predict-digit *network* image)))
+    (format t "Image ~D: Actual=~D, Predicted=~D ~A~%" 
+            i actual-label predicted
+            (if (= actual-label predicted) "✓" "✗"))))
+```
+
+### Step 8: Evaluate Overall Accuracy
+
+```lisp
+;; Test on first 1000 test images
+(mnist-ocr::evaluate-accuracy *network* 
+                              (subseq *test-images* 0 1000)
+                              (subseq *test-labels* 0 1000))
+```
+
+### Step 9: Save Your Trained Network
+
+```lisp
+;; Save the network to a file
+(mnist-ocr::save-network *network* "my-trained-network.lisp")
+```
+
+### Step 10: Exit SBCL
+
+Type:
+```lisp
+(quit)
+```
+
+## 🚀 Full Training (Advanced)
+
+Once you're comfortable with the basics, train on the full dataset:
+
+```lisp
+;; Full training (takes 5-10 minutes)
+(mnist-ocr::train-network *network* 
+                          *train-images*   ; All 60000 images
+                          *train-labels*   ; All 60000 labels
+                          10               ; 10 epochs
+                          0.1)             ; Learning rate
+
+;; Evaluate on full test set
+(mnist-ocr::evaluate-accuracy *network* *test-images* *test-labels*)
+```
+
+## 💡 Understanding What Each Command Does
+
+### Loading Files
+- `(load "packages.lisp")` - Defines the namespace for our code
+- `(load "src/data-loader.lisp")` - Functions to read MNIST binary files
+- `(load "src/neural-net.lisp")` - Neural network structure and forward pass
+- `(load "src/training.lisp")` - Backpropagation and training loop
+- `(load "src/inference.lisp")` - Prediction and evaluation functions
+
+### Key Functions
+- `load-mnist-data` - Reads the MNIST files and returns 4 arrays
+- `create-network` - Initializes random weights for the neural network
+- `predict-digit` - Takes an image array and returns predicted digit (0-9)
+- `train-network` - Updates weights using gradient descent
+- `evaluate-accuracy` - Tests the network and reports percentage correct
+
+### Data Structures
+- Images are arrays of 784 bytes (28×28 pixels)
+- Labels are single bytes (0-9)
+- Network has weight matrices and bias vectors
+- All computations use single-precision floats for speed
+
+
+## 🎯 Common Usage Patterns
+
+### Loading a Previously Trained Network
+```lisp
+;; Start SBCL and load the system
+(load "packages.lisp")
+(load "src/data-loader.lisp") 
+(load "src/neural-net.lisp")
+(load "src/training.lisp")
+(load "src/inference.lisp")
+
+;; Load saved network
+(defparameter *saved-net* (mnist-ocr::load-network "trained-mnist-net.lisp"))
+
+;; Load test data to try predictions
+(multiple-value-bind (tr-img tr-lbl test-images test-labels)
+    (mnist-ocr::load-mnist-data "data/")
+  (defparameter *test-images* test-images)
+  (defparameter *test-labels* test-labels))
+
+;; Make predictions
+(mnist-ocr::predict-digit *saved-net* (aref *test-images* 0))
 ```
 
 ### Experiment with Hyperparameters
@@ -280,27 +428,43 @@ Add to the top of your files:
 
 ## 🐛 Troubleshooting
 
-### "File not found" errors
-- Ensure MNIST files are in the `data/` directory
-- Check file names match exactly (no extra extensions)
-- Verify files were unzipped properly
+### Common REPL Errors and Solutions
 
-### Memory issues
-- Use smaller batch sizes
-- Reduce training set size for initial experiments
-- Run `(sb-ext:gc :full t)` to force garbage collection
+**"Package MNIST-OCR does not exist"**
+- You forgot to load packages.lisp first
+- Solution: `(load "packages.lisp")`
 
-### Slow training
-- Ensure optimization declarations are included
-- Use single-float instead of double-float
-- Consider smaller network architecture for initial tests
+**"Undefined function MNIST-OCR::..."**  
+- You haven't loaded all the source files
+- Solution: Load all files in order as shown in Step 2
 
-### ASDF system not found
+**"File not found" errors**
+- You're not in the project directory
+- Solution: Check with `(pwd)` or restart SBCL from project folder
+
+**"END-OF-FILE" errors**
+- MNIST data files are corrupted or not fully downloaded
+- Solution: Re-download and extract the .gz files
+
+### Memory Issues
 ```lisp
-;; Add current directory to ASDF
-(push #P"./" asdf:*central-registry*)
-(asdf:load-system :mnist-ocr)
+;; Force garbage collection
+(sb-ext:gc :full t)
+
+;; Check memory usage
+(room)
+
+;; Use smaller batches for training
+(subseq *train-images* 0 5000)  ; Just 5000 images
 ```
+
+### Performance Tips
+- Training 60000 images takes 5-10 minutes
+- Start with 1000 images for quick tests
+- The network should achieve >90% accuracy after 3-5 epochs
+
+### ASDF Not Working?
+No problem! Just use the manual loading approach shown in the first-time user section.
 
 ## 📈 Extending the Project
 
