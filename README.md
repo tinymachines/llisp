@@ -1,6 +1,11 @@
-# 🤖 MNIST OCR from Scratch in Common Lisp
+# 🤖 Deep Learning from Scratch in Common Lisp
 
-A complete implementation of a neural network for MNIST digit recognition built entirely from scratch in Common Lisp with SBCL. No external ML libraries required!
+Two complete implementations of neural architectures built entirely from scratch in Common Lisp with SBCL:
+
+1. **MNIST OCR Neural Network** - A feedforward neural network for handwritten digit recognition
+2. **Transformer Model** - A sequence-to-sequence transformer that learns to add 2-digit numbers
+
+No external ML libraries required!
 
 ## 🚀 Features
 
@@ -504,13 +509,116 @@ No problem! Just use the manual loading approach shown in the first-time user se
 
 MIT License - see LICENSE file for details.
 
+## 🤖 Transformer Implementation
+
+In addition to the MNIST neural network, this repository includes a complete transformer implementation inspired by the tinygrad example.
+
+### Transformer Features
+
+- **Multi-Head Attention** - Scaled dot-product attention with multiple heads
+- **Positional Encoding** - Learnable position embeddings
+- **Layer Normalization** - For stable training
+- **Feed-Forward Networks** - With ReLU activation
+- **Residual Connections** - Skip connections for better gradient flow
+- **Addition Task** - Learns to add 2-digit numbers (e.g., 35 + 47 = 082)
+
+### Quick Start - Transformer
+
+```bash
+# Start SBCL
+sbcl
+```
+
+In the REPL:
+```lisp
+;; Add current directory to ASDF
+(push #P"./" asdf:*central-registry*)
+
+;; Load the transformer system
+(asdf:load-system :transformer)
+
+;; Switch to transformer package
+(in-package :transformer)
+
+;; Run the addition experiment
+(main)
+```
+
+This will:
+1. Create a transformer with 2 layers, 4 attention heads
+2. Generate a dataset of 10,000 addition problems
+3. Train for 10 epochs with learning rate decay
+4. Show test examples like: `35 + 47 = 082 (predicted: 082)`
+
+### Transformer Architecture
+
+```
+Input (6 tokens: d1 d2 + d3 d4 =)
+         ↓
+    Embedding Layer
+         ↓
+  Positional Encoding
+         ↓
+  Transformer Block 1
+   - Multi-Head Attention
+   - Feed-Forward Network
+         ↓
+  Transformer Block 2
+   - Multi-Head Attention  
+   - Feed-Forward Network
+         ↓
+   Output Projection
+         ↓
+Output (6 tokens: d2 + d3 d4 = result)
+```
+
+### Understanding the Code
+
+**Core Components:**
+- `src/attention.lisp` - Scaled dot-product and multi-head attention
+- `src/transformer-block.lisp` - Complete transformer block with residual connections
+- `src/transformer-model.lisp` - Full model with embeddings and output projection
+- `src/dataset.lisp` - Addition problem generator
+- `src/transformer-training.lisp` - Training loop with Adam optimizer
+
+**Key Functions:**
+- `(make-instance 'transformer ...)` - Create a transformer model
+- `(forward model input)` - Run forward pass
+- `(train-transformer ...)` - Train the model
+- `(make-addition-dataset)` - Generate training data
+
+### Experimenting with Transformers
+
+```lisp
+;; Create a smaller transformer
+(defparameter *small-transformer*
+  (make-instance 'transformer
+                 :num-symbols 10
+                 :max-len 6
+                 :num-layers 1      ; Just 1 layer
+                 :embed-dim 64      ; Smaller embeddings
+                 :num-heads 2       ; Fewer attention heads
+                 :ff-dim 16))       ; Smaller feed-forward
+
+;; Create a larger transformer
+(defparameter *large-transformer*
+  (make-instance 'transformer
+                 :num-symbols 10
+                 :max-len 6
+                 :num-layers 4      ; More layers
+                 :embed-dim 256     ; Larger embeddings
+                 :num-heads 8       ; More attention heads
+                 :ff-dim 128))      ; Larger feed-forward
+```
+
 ## 🎉 What's Next?
 
-Once you have this working, try:
-- Implementing a web interface with Hunchentoot
-- Creating a GUI with McCLIM  
-- Deploying as a command-line tool
-- Building a REST API for digit recognition
-- Experimenting with other datasets (CIFAR-10, Fashion-MNIST)
+Once you have both models working, try:
+- Implementing other transformer tasks (copy, reverse, sort)
+- Adding beam search for better predictions
+- Implementing BERT-style masked language modeling
+- Creating a web interface with Hunchentoot
+- Building a REST API for both models
+- Experimenting with other sequence tasks
 
 Happy Lisping! 🎊
